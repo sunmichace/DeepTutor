@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# DeepTutor pre-commit hook
+#
+# Cleans up local artifacts that have caused pytest collect failures and
+# accidental commits in the past:
+#   - __pycache__ directories under tests/ and scripts/
+#   - root-level "=*" files (typo from `pip install pkg >=1.0` redirected output)
+#
+# Install with:
+#   git config core.hooksPath .githooks
+#
+# To skip on a single commit, run:
+#   SKIP_DEEPTUTOR_HOOK=1 git commit ...
+
+set -e
+
+if [[ "${SKIP_DEEPTUTOR_HOOK:-0}" == "1" ]]; then
+    exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+# 1. Clean stale __pycache__ in tests/ and scripts/ — these have caused
+#    pytest collect failures via same-basename module collisions.
+find tests scripts -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+
+# 2. Remove root-level files matching "=*" (e.g. =1.1.0 from a botched
+#    `pip install pkg >=1.1.0`). Refuse to delete tracked files.
+shopt -s nullglob
+for f in =*; do
+    if git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+        echo "pre-commit: refusing to delete tracked file '$f'" >&2
+        exit 1
+    fi
+    rm -f "$f"
+done
+shopt -u nullglob
+
+exit 0
