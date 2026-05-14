@@ -186,6 +186,9 @@ async def sdk_stream(
         if delta is None:
             continue
         raw_content = getattr(delta, "content", None) if not isinstance(delta, dict) else delta.get("content")
+        # Some providers (e.g. DeepSeek) stream content via reasoning_content
+        if raw_content is None:
+            raw_content = getattr(delta, "reasoning_content", None) if not isinstance(delta, dict) else delta.get("reasoning_content")
         if raw_content is None:
             continue
         content = extract_response_content(delta)

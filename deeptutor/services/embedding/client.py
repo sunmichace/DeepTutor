@@ -8,6 +8,7 @@ from deeptutor.logging import get_logger
 
 from .adapters.base import BaseEmbeddingAdapter, EmbeddingRequest
 from .adapters.cohere import CohereEmbeddingAdapter
+from .adapters.huggingface_local import HuggingFaceLocalEmbeddingAdapter
 from .adapters.jina import JinaEmbeddingAdapter
 from .adapters.ollama import OllamaEmbeddingAdapter
 from .adapters.openai_compatible import OpenAICompatibleEmbeddingAdapter
@@ -17,6 +18,7 @@ _OPENAI_COMPAT_PROVIDERS = {"custom", "openai", "azure_openai", "vllm"}
 _COHERE_PROVIDERS = {"cohere"}
 _JINA_PROVIDERS = {"jina"}
 _OLLAMA_PROVIDERS = {"ollama"}
+_HUGGINGFACE_LOCAL_PROVIDERS = {"huggingface_local", "sentence_transformers"}
 
 
 def _resolve_adapter_class(binding: str) -> type[BaseEmbeddingAdapter]:
@@ -29,8 +31,14 @@ def _resolve_adapter_class(binding: str) -> type[BaseEmbeddingAdapter]:
         return JinaEmbeddingAdapter
     if provider in _OLLAMA_PROVIDERS:
         return OllamaEmbeddingAdapter
+    if provider in _HUGGINGFACE_LOCAL_PROVIDERS:
+        return HuggingFaceLocalEmbeddingAdapter
     supported = sorted(
-        _OPENAI_COMPAT_PROVIDERS | _COHERE_PROVIDERS | _JINA_PROVIDERS | _OLLAMA_PROVIDERS
+        _OPENAI_COMPAT_PROVIDERS
+        | _COHERE_PROVIDERS
+        | _JINA_PROVIDERS
+        | _OLLAMA_PROVIDERS
+        | _HUGGINGFACE_LOCAL_PROVIDERS
     )
     raise ValueError(
         f"Unknown embedding binding: '{binding}'. Supported providers: {', '.join(supported)}"
@@ -139,4 +147,3 @@ def get_embedding_client(config: Optional[EmbeddingConfig] = None) -> EmbeddingC
 def reset_embedding_client() -> None:
     global _client
     _client = None
-

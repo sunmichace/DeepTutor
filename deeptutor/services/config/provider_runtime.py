@@ -37,6 +37,8 @@ EMBEDDING_PROVIDER_ALIASES = {
     "google": "openai",
     "gemini": "openai",
     "huggingface": "custom",
+    "hf_local": "huggingface_local",
+    "sentence_transformers": "huggingface_local",
     "lm_studio": "vllm",
     "llama_cpp": "vllm",
     "openai_compatible": "custom",
@@ -91,6 +93,13 @@ EMBEDDING_PROVIDER_DEFAULTS: dict[str, dict[str, Any]] = {
         "keywords": ("vllm", "lmstudio"),
         "is_local": True,
         "api_key_envs": ("HOSTED_VLLM_API_KEY",),
+    },
+    "huggingface_local": {
+        "mode": "local",
+        "default_api_base": "local://huggingface",
+        "keywords": ("sentence-transformers", "bge-", "gte-", "e5-", "minilm"),
+        "is_local": True,
+        "api_key_envs": (),
     },
 }
 

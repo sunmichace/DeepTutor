@@ -233,6 +233,10 @@ def extract_response_content(message: object) -> str:
         content = _extract_content_field(message.get("content"))
         if content:
             return content
+        # Some providers (e.g. DeepSeek) stream via reasoning_content
+        reasoning = message.get("reasoning_content")
+        if reasoning:
+            return str(reasoning)
         if "text" in message and message["text"] is not None:
             return str(message["text"])
         return ""
@@ -242,6 +246,11 @@ def extract_response_content(message: object) -> str:
         content = _extract_content_field(getattr(message, "content"))
         if content:
             return content
+    # Some providers (e.g. DeepSeek) stream via reasoning_content
+    if hasattr(message, "reasoning_content"):
+        reasoning = getattr(message, "reasoning_content")
+        if reasoning:
+            return str(reasoning)
     if hasattr(message, "text"):
         text_value = getattr(message, "text")
         if text_value is not None:

@@ -29,11 +29,12 @@ load_dotenv(PROJECT_ROOT / ".env", override=False)
 def _load_embedding_services():
     from deeptutor.services.embedding.client import get_embedding_client, reset_embedding_client
     from deeptutor.services.embedding.config import get_embedding_config
+    from deeptutor.services.embedding.health import check_embedding_health
 
-    return get_embedding_client, reset_embedding_client, get_embedding_config
+    return get_embedding_client, reset_embedding_client, get_embedding_config, check_embedding_health
 
 
-get_embedding_client, reset_embedding_client, get_embedding_config = _load_embedding_services()
+get_embedding_client, reset_embedding_client, get_embedding_config, check_embedding_health = _load_embedding_services()
 
 
 def _mask_key(key: str) -> str:
@@ -98,6 +99,11 @@ async def main() -> None:
         action="store_true",
         help="Also directly call /embeddings endpoint and print raw response",
     )
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="Run structured health check and print a concise diagnosis",
+    )
     args = parser.parse_args()
 
     cfg = get_embedding_config()
@@ -110,6 +116,21 @@ async def main() -> None:
         print(f"  timeout={cfg.request_timeout}")
         print(f"  batch_size={cfg.batch_size}")
         print(f"  api_key={_mask_key(cfg.api_key)}")
+
+    if args.health:
+        result = await check_embedding_health(args.text)
+        print("[Health]")
+        print(f"  ok={result.ok}")
+        print(f"  binding={result.binding}")
+        print(f"  model={result.model}")
+        print(f"  host={result.base_url}")
+        print(f"  dim={result.dimension}")
+        if result.error:
+            print(f"  error={result.error}")
+        if result.suggestion:
+            print(f"  suggestion={result.suggestion}")
+        if not args.direct:
+            return
 
     try:
         await run_client_test(args.text, max(1, args.repeat))

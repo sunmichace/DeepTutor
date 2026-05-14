@@ -15,6 +15,8 @@ def _build_catalog(
     *,
     llm_profile: dict | None = None,
     llm_model: dict | None = None,
+    embedding_profile: dict | None = None,
+    embedding_model: dict | None = None,
     search_profile: dict | None = None,
 ) -> dict:
     llm_profile = llm_profile or {
@@ -37,6 +39,24 @@ def _build_catalog(
         "proxy": "",
         "models": [],
     }
+    embedding_profile = embedding_profile or {
+        "id": "emb-p",
+        "name": "Embedding",
+        "binding": "huggingface_local",
+        "base_url": "",
+        "api_key": "",
+        "api_version": "",
+        "extra_headers": {},
+        "models": [
+            {
+                "id": "emb-m",
+                "name": "m",
+                "model": "BAAI/bge-small-zh-v1.5",
+                "dimension": 512,
+            }
+        ],
+    }
+    embedding_model = embedding_model or embedding_profile["models"][0]
     return {
         "version": 1,
         "services": {
@@ -46,9 +66,9 @@ def _build_catalog(
                 "profiles": [llm_profile],
             },
             "embedding": {
-                "active_profile_id": None,
-                "active_model_id": None,
-                "profiles": [],
+                "active_profile_id": embedding_profile["id"],
+                "active_model_id": embedding_model["id"],
+                "profiles": [embedding_profile],
             },
             "search": {
                 "active_profile_id": search_profile["id"],
@@ -234,3 +254,32 @@ def test_search_searxng_without_url_fallback(tmp_path: Path) -> None:
     resolved = resolve_search_runtime_config(catalog=catalog, env_store=_empty_env(tmp_path))
     assert resolved.provider == "duckduckgo"
     assert resolved.fallback_reason is not None
+
+
+def test_embedding_local_huggingface_provider_is_resolved(tmp_path: Path) -> None:
+    catalog = _build_catalog(
+        embedding_profile={
+            "id": "emb-p",
+            "name": "Embedding",
+            "binding": "sentence_transformers",
+            "base_url": "",
+            "api_key": "",
+            "api_version": "",
+            "extra_headers": {},
+            "models": [
+                {
+                    "id": "emb-m",
+                    "name": "m",
+                    "model": "BAAI/bge-small-zh-v1.5",
+                    "dimension": 512,
+                }
+            ],
+        }
+    )
+    from deeptutor.services.config.provider_runtime import resolve_embedding_runtime_config
+
+    resolved = resolve_embedding_runtime_config(catalog=catalog, env_store=_empty_env(tmp_path))
+    assert resolved.provider_name == "huggingface_local"
+    assert resolved.provider_mode == "local"
+    assert resolved.effective_url == "local://huggingface"
+    assert resolved.api_key == "sk-no-key-required"
