@@ -7,6 +7,8 @@ True LlamaIndex integration using official llama-index library.
 
 import asyncio
 from pathlib import Path
+import subprocess
+import tempfile
 from typing import Any, Dict, List, Optional
 
 from llama_index.core import (
@@ -187,8 +189,8 @@ class LlamaIndexPipeline:
 
             for file_path_str in classification.parser_files:
                 file_path = Path(file_path_str)
-                self.logger.info(f"Parsing PDF: {file_path.name}")
-                text = self._extract_pdf_text(file_path)
+                self.logger.info(f"Parsing document: {file_path.name}")
+                text = self._extract_document_text(file_path)
                 if text.strip():
                     documents.append(
                         Document(
@@ -196,6 +198,7 @@ class LlamaIndexPipeline:
                             metadata={
                                 "file_name": file_path.name,
                                 "file_path": str(file_path),
+                                "file_type": file_path.suffix.lower().lstrip("."),
                             },
                         )
                     )
@@ -259,6 +262,20 @@ class LlamaIndexPipeline:
             if isinstance(Settings.embed_model, CustomEmbedding):
                 Settings.embed_model.set_progress_callback(None)
 
+    def _extract_document_text(self, file_path: Path) -> str:
+        """Extract text from supported parser-routed documents."""
+        ext = file_path.suffix.lower()
+        if ext == ".pdf":
+            return self._extract_pdf_text(file_path)
+        if ext == ".doc":
+            return self._extract_legacy_doc_text(file_path)
+        if ext == ".docx":
+            return self._extract_docx_text(file_path)
+        if ext == ".pptx":
+            return self._extract_pptx_text(file_path)
+        self.logger.warning(f"Unsupported parser document type: {file_path.name}")
+        return ""
+
     def _extract_pdf_text(self, file_path: Path) -> str:
         """Extract text from PDF using PyMuPDF."""
         try:
@@ -275,6 +292,100 @@ class LlamaIndexPipeline:
             return ""
         except Exception as e:
             self.logger.error(f"Failed to extract PDF text: {e}")
+            return ""
+
+    def _extract_docx_text(self, file_path: Path) -> str:
+        """Extract readable text from DOCX paragraphs and tables."""
+        try:
+            from docx import Document as DocxDocument
+        except ImportError:
+            self.logger.warning("python-docx not installed. Cannot extract DOCX text.")
+            return ""
+        try:
+            doc = DocxDocument(str(file_path))
+            parts: list[str] = []
+            for paragraph in doc.paragraphs:
+                text = paragraph.text.strip()
+                if text:
+                    parts.append(text)
+            for table in doc.tables:
+                for row in table.rows:
+                    cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                    if cells:
+                        parts.append(" | ".join(cells))
+            return "\n\n".join(parts)
+        except Exception as e:
+            self.logger.error(f"Failed to extract DOCX text: {e}")
+            return ""
+
+    def _extract_legacy_doc_text(self, file_path: Path) -> str:
+        """Extract text from legacy .doc files via LibreOffice conversion."""
+        converter = self._find_office_converter()
+        if not converter:
+            self.logger.warning("LibreOffice/soffice not found. Cannot extract legacy DOC text.")
+            return ""
+        try:
+            with tempfile.TemporaryDirectory(prefix="deeptutor-doc-") as temp_dir:
+                cmd = [
+                    converter,
+                    "--headless",
+                    "--convert-to",
+                    "txt:Text",
+                    "--outdir",
+                    temp_dir,
+                    str(file_path),
+                ]
+                subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=60)
+                converted = Path(temp_dir) / f"{file_path.stem}.txt"
+                if not converted.exists():
+                    self.logger.warning(f"LibreOffice did not produce TXT for {file_path.name}")
+                    return ""
+                return FileTypeRouter.read_text_file_sync(str(converted))
+        except subprocess.TimeoutExpired:
+            self.logger.error(f"Timed out converting legacy DOC: {file_path.name}")
+            return ""
+        except Exception as e:
+            self.logger.error(f"Failed to extract legacy DOC text: {e}")
+            return ""
+
+    @staticmethod
+    def _find_office_converter() -> str:
+        """Find a LibreOffice-compatible command for legacy Office conversion."""
+        import shutil
+
+        return shutil.which("libreoffice") or shutil.which("soffice") or ""
+
+    def _extract_pptx_text(self, file_path: Path) -> str:
+        """Extract readable text from PPTX slides, tables, and notes."""
+        try:
+            from pptx import Presentation
+        except ImportError:
+            self.logger.warning("python-pptx not installed. Cannot extract PPTX text.")
+            return ""
+        try:
+            presentation = Presentation(str(file_path))
+            parts: list[str] = []
+            for index, slide in enumerate(presentation.slides, start=1):
+                slide_parts: list[str] = []
+                for shape in slide.shapes:
+                    if getattr(shape, "has_text_frame", False):
+                        text = shape.text.strip()
+                        if text:
+                            slide_parts.append(text)
+                    if getattr(shape, "has_table", False):
+                        for row in shape.table.rows:
+                            cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                            if cells:
+                                slide_parts.append(" | ".join(cells))
+                notes = getattr(slide, "notes_slide", None)
+                notes_text_frame = getattr(getattr(notes, "notes_text_frame", None), "text", "")
+                if notes_text_frame and notes_text_frame.strip():
+                    slide_parts.append(notes_text_frame.strip())
+                if slide_parts:
+                    parts.append(f"Slide {index}\n" + "\n".join(slide_parts))
+            return "\n\n".join(parts)
+        except Exception as e:
+            self.logger.error(f"Failed to extract PPTX text: {e}")
             return ""
 
     async def search(

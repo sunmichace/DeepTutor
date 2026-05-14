@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -119,7 +120,6 @@ class RAGService:
             self.logger.info(
                 f"Searching KB '{kb_name}' with provider '{provider}' and query: {query[:50]}..."
             )
-            pipeline = get_pipeline(provider, kb_base_dir=self.kb_base_dir)
 
             await self._emit_tool_event(
                 event_sink,
@@ -128,7 +128,19 @@ class RAGService:
                 {"provider": provider, "trace_layer": "summary"},
             )
 
-            result = await pipeline.search(query=query, kb_name=kb_name, **kwargs)
+            try:
+                pipeline = get_pipeline(provider, kb_base_dir=self.kb_base_dir)
+                result = await pipeline.search(query=query, kb_name=kb_name, **kwargs)
+            except Exception as exc:
+                fallback = self._search_manifest_fallback(
+                    query=query,
+                    kb_name=kb_name,
+                    limit=int(kwargs.get("limit", kwargs.get("top_k", 5)) or 5),
+                    error=exc,
+                )
+                if fallback is None:
+                    raise
+                result = fallback
 
             if "query" not in result:
                 result["query"] = query
@@ -151,6 +163,104 @@ class RAGService:
             )
 
             return result
+
+    def _search_manifest_fallback(
+        self,
+        *,
+        query: str,
+        kb_name: str,
+        limit: int = 5,
+        error: Exception | None = None,
+    ) -> dict[str, Any] | None:
+        """Return metadata-level matches when the vector index is unavailable."""
+        manifest_path = Path(self.kb_base_dir) / kb_name / "manifest.json"
+        if not manifest_path.exists():
+            return None
+
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            files = manifest.get("files", [])
+        except (json.JSONDecodeError, OSError) as manifest_exc:
+            self.logger.warning(
+                f"Could not read manifest fallback for KB '{kb_name}': {manifest_exc}"
+            )
+            return None
+
+        if not isinstance(files, list) or not files:
+            return None
+
+        tokens = _tokenize_for_manifest_search(query)
+        ranked: list[tuple[int, dict[str, Any]]] = []
+        for item in files:
+            if not isinstance(item, dict):
+                continue
+            text = " ".join(
+                str(item.get(key, ""))
+                for key in (
+                    "file_name",
+                    "relative_path",
+                    "estimated_content_type",
+                    "estimated_question_type",
+                    "estimated_position",
+                    "estimated_difficulty",
+                )
+            )
+            score = sum(1 for token in tokens if token and token in text)
+            if score:
+                ranked.append((score, item))
+
+        if not ranked:
+            ranked = [(0, item) for item in files if isinstance(item, dict)]
+
+        ranked.sort(
+            key=lambda pair: (
+                pair[0],
+                _manifest_content_priority(pair[1].get("estimated_content_type", "")),
+                int(pair[1].get("size", 0) or 0),
+            ),
+            reverse=True,
+        )
+        selected = [item for _, item in ranked[:max(1, limit)]]
+        lines = [
+            "向量索引暂不可用，以下为知识库 manifest 元数据检索结果：",
+        ]
+        for idx, item in enumerate(selected, start=1):
+            lines.append(
+                (
+                    f"{idx}. {item.get('file_name', '')} "
+                    f"[{item.get('estimated_content_type', '未知')}; "
+                    f"{item.get('estimated_question_type') or '通用题型'}; "
+                    f"{item.get('estimated_position') or '通用岗位'}; "
+                    f"{item.get('estimated_difficulty') or 'medium'}]"
+                ).strip()
+            )
+
+        if error is not None:
+            self.logger.warning(
+                f"Vector RAG failed for KB '{kb_name}', using manifest fallback: {error}"
+            )
+
+        sources = [
+            {
+                "file_name": item.get("file_name", ""),
+                "relative_path": item.get("relative_path", ""),
+                "content_type": item.get("estimated_content_type", ""),
+                "question_type": item.get("estimated_question_type", ""),
+                "position": item.get("estimated_position", ""),
+                "difficulty": item.get("estimated_difficulty", ""),
+            }
+            for item in selected
+        ]
+        answer = "\n".join(lines)
+        return {
+            "query": query,
+            "answer": answer,
+            "content": answer,
+            "sources": sources,
+            "provider": "manifest_fallback",
+            "fallback": True,
+            "fallback_reason": str(error) if error is not None else "vector index unavailable",
+        }
 
     async def _emit_tool_event(
         self,
@@ -301,3 +411,25 @@ class RAGService:
     @staticmethod
     def has_provider(name: str) -> bool:
         return has_pipeline((name or "").strip().lower())
+
+
+def _tokenize_for_manifest_search(query: str) -> list[str]:
+    import re
+
+    words = re.findall(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]{2,}", query)
+    tokens = list(words)
+    for word in words:
+        if re.fullmatch(r"[\u4e00-\u9fff]{4,}", word):
+            tokens.extend(word[i : i + 2] for i in range(len(word) - 1))
+    return [token for token in dict.fromkeys(tokens) if token]
+
+
+def _manifest_content_priority(content_type: str) -> int:
+    priorities = {
+        "真题": 5,
+        "高分作答": 4,
+        "示范表达": 3,
+        "方法论": 2,
+        "论证素材": 1,
+    }
+    return priorities.get(content_type, 0)
