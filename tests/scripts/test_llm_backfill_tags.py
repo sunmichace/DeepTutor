@@ -104,7 +104,7 @@ def test_apply_suggestion_only_fills_sentinel_fields_by_default():
     assert entry["estimated_question_type"] == "社会现象"
     assert entry["estimated_position"] == "公务员"
     assert entry["estimated_difficulty"] == "hard"
-    assert entry["_llm_backfill"]["v1"]["confidence"] == 0.9
+    assert entry["_llm_backfill"][mod._SCHEMA_VERSION]["confidence"] == 0.9
 
 
 def test_apply_suggestion_overwrite_replaces_strong_values():
@@ -236,7 +236,7 @@ def test_cache_hit_skips_live_call_and_applies_updates(tmp_path: Path, monkeypat
     assert entry["estimated_question_type"] == "真题"
     assert entry["estimated_position"] == "公务员"
     assert entry["estimated_difficulty"] == "hard"
-    assert entry["_llm_backfill"]["v1"]["applied"]
+    assert entry["_llm_backfill"][mod._SCHEMA_VERSION]["applied"]
 
 
 def test_max_api_calls_zero_disables_live_calls(tmp_path: Path, monkeypatch):

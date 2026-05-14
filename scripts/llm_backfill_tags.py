@@ -52,7 +52,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from deeptutor.services.llm.cache import LLMCache  # noqa: E402
 
-_SCHEMA_VERSION = "v1"
+_SCHEMA_VERSION = "v2"  # v2: prompt 标注 sentinel 字段，禁止复读
 _DEFAULT_MODEL = "deepseek-chat"
 
 MANIFEST_PATH = Path("data/knowledge_bases/interview_bank/manifest.json")
@@ -114,26 +114,67 @@ def _is_sentinel(field: str, value: object) -> bool:
 
 
 def _needs_backfill(entry: dict[str, Any]) -> bool:
-    return any(
-        _is_sentinel(field, entry.get(field)) for field in _SENTINELS
-    )
+    """Only trigger LLM when question_type is a sentinel value.
+
+    `difficulty=medium` and `position=通用` are default values that, in
+    practice, are usually correct — most interview prep material genuinely
+    is medium difficulty / general position. Burning API budget to have the
+    LLM re-confirm "yes, still medium" is wasted spend. The real long tail
+    is files with generic question_type (综合课程 / 综合套题 / 经验笔记)
+    or no question_type at all — those carry actionable information that
+    rules can't extract.
+    """
+    return _is_sentinel("estimated_question_type", entry.get("estimated_question_type"))
 
 
 def _build_prompt(entry: dict[str, Any]) -> str:
+    """Construct the LLM prompt, explicitly marking sentinel/default fields.
+
+    Without the SENTINEL annotation, the LLM tends to copy the existing tag
+    back verbatim — e.g. when 'estimated_question_type' is the generic
+    '综合课程', it returns '综合课程' again with high confidence. The marker
+    plus an explicit instruction force the model to treat sentinels as
+    rejected hypotheses.
+    """
+    qt = entry.get("estimated_question_type") or ""
+    pos = entry.get("estimated_position") or ""
+    diff = entry.get("estimated_difficulty") or ""
+
+    qt_marked = (
+        f"{qt or '(空)'} ⟵ 已被规则判定为模糊或缺失，**不要**返回同一值"
+        if _is_sentinel("estimated_question_type", qt)
+        else qt
+    )
+    pos_marked = (
+        f"{pos or '(空)'} ⟵ 默认值，**不要**返回 '通用' 或 '综合管理'"
+        if _is_sentinel("estimated_position", pos)
+        else pos
+    )
+    diff_marked = (
+        f"{diff or '(空)'} ⟵ 默认值，**只有**当文件名/路径明确暗示 easy 或 hard 时才填，否则返回空字符串"
+        if _is_sentinel("estimated_difficulty", diff)
+        else diff
+    )
+
     lines = [
         f"文件名: {entry.get('file_name', '?')}",
         f"路径: {entry.get('relative_path', '?')}",
         f"来源: {entry.get('source_kind', '?')}",
-        f"现有题型: {entry.get('estimated_question_type') or '(空)'}",
-        f"现有岗位: {entry.get('estimated_position') or '(空)'}",
-        f"现有难度: {entry.get('estimated_difficulty') or '(默认)'}",
+        f"现有题型: {qt_marked}",
+        f"现有岗位: {pos_marked}",
+        f"现有难度: {diff_marked}",
         "",
         "候选题型: " + "、".join(_CANDIDATE_QUESTION_TYPES),
         "候选岗位: " + "、".join(_CANDIDATE_POSITIONS),
         "候选难度: " + "、".join(_CANDIDATE_DIFFICULTIES),
         "",
+        "规则：",
+        "- 只能基于文件名 + 路径 + source_kind 推断；不要凭空想象。",
+        "- 如果某字段没有可靠依据，返回空字符串而不是 sentinel/默认值。",
+        "- 'reason' 必须引用文件名或路径里的具体词作为证据。",
+        "- confidence < 0.6 的字段返回空字符串。",
+        "",
         "返回 JSON 对象，字段：question_type, position, difficulty, confidence, reason。",
-        "confidence < 0.6 的字段请返回空字符串。",
     ]
     return "\n".join(lines)
 
