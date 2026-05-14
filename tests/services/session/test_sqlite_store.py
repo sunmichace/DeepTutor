@@ -56,6 +56,14 @@ def store(tmp_path: Path) -> SQLiteSessionStore:
     return SQLiteSessionStore(db_path=tmp_path / "test.db")
 
 
+def test_ensure_session_preserves_new_explicit_session_id(store: SQLiteSessionStore) -> None:
+    session = asyncio.run(store.ensure_session("candidate-1"))
+
+    assert session["id"] == "candidate-1"
+    assert session["session_id"] == "candidate-1"
+    assert asyncio.run(store.ensure_session("candidate-1"))["id"] == "candidate-1"
+
+
 def _make_items(*specs):
     """Build notebook entry dicts from (qid, question, is_correct) tuples."""
     items = []

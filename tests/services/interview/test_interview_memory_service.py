@@ -91,6 +91,58 @@ def test_save_and_read_profile() -> None:
     assert loaded.dynamic.current_training_suggestion == "加强综合分析题练习"
 
 
+def test_profile_from_dict_preserves_field_types() -> None:
+    profile = LearnerProfile.from_dict(
+        {
+            "stable": {
+                "target_exam_type": "国考",
+                "needs_template_prompt": True,
+                "needs_high_score_demo": "false",
+            },
+            "dynamic": {
+                "recent_weak_types": ["综合分析", 123],
+                "recent_low_score_dimensions": [
+                    {"dimension": "逻辑完整性", "score": 4},
+                    "bad-item",
+                ],
+                "repeated_weak_dimensions": [
+                    {"dimension": "逻辑完整性", "count": 2},
+                    "bad-item",
+                ],
+                "dimension_trends": [
+                    {"dimension": "逻辑完整性", "status": "declining"},
+                    "bad-item",
+                ],
+                "training_suggestion_history": [
+                    {"session_id": "s1", "suggestion": "补充案例"},
+                    "bad-item",
+                ],
+                "recent_deduction_reasons": "not-a-list",
+                "current_training_suggestion": None,
+            },
+        }
+    )
+
+    assert profile.stable.target_exam_type == "国考"
+    assert profile.stable.needs_template_prompt is True
+    assert profile.stable.needs_high_score_demo is False
+    assert profile.dynamic.recent_weak_types == ["综合分析", "123"]
+    assert profile.dynamic.recent_low_score_dimensions == [
+        {"dimension": "逻辑完整性", "score": 4}
+    ]
+    assert profile.dynamic.repeated_weak_dimensions == [
+        {"dimension": "逻辑完整性", "count": 2}
+    ]
+    assert profile.dynamic.dimension_trends == [
+        {"dimension": "逻辑完整性", "status": "declining"}
+    ]
+    assert profile.dynamic.training_suggestion_history == [
+        {"session_id": "s1", "suggestion": "补充案例"}
+    ]
+    assert profile.dynamic.recent_deduction_reasons == []
+    assert profile.dynamic.current_training_suggestion == ""
+
+
 def test_read_profile_empty() -> None:
     svc = InterviewMemoryService("nonexistent_user")
     profile = svc.read_profile()

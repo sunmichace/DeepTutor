@@ -7,6 +7,32 @@ from datetime import datetime
 from typing import Any
 
 
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on", "是"}
+    return bool(value)
+
+
+def _as_str(value: Any) -> str:
+    if value is None:
+        return ""
+    return value if isinstance(value, str) else str(value)
+
+
+def _as_str_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [_as_str(item) for item in value if item is not None]
+
+
+def _as_dict_list(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
 # ── Learner Profile ────────────────────────────────────────────────────
 
 
@@ -34,7 +60,15 @@ class StableProfile:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> StableProfile:
-        return cls(**{k: data.get(k, "") for k in cls.__dataclass_fields__})
+        return cls(
+            target_exam_type=_as_str(data.get("target_exam_type")),
+            target_position=_as_str(data.get("target_position")),
+            current_stage=_as_str(data.get("current_stage")),
+            training_preference=_as_str(data.get("training_preference")),
+            needs_template_prompt=_as_bool(data.get("needs_template_prompt", False)),
+            needs_high_score_demo=_as_bool(data.get("needs_high_score_demo", False)),
+            updated_at=_as_str(data.get("updated_at")),
+        )
 
 
 @dataclass
@@ -45,6 +79,10 @@ class DynamicProfile:
     recent_low_score_dimensions: list[dict[str, Any]] = field(default_factory=list)
     recent_deduction_reasons: list[str] = field(default_factory=list)
     recent_followup_issues: list[str] = field(default_factory=list)
+    repeated_weak_dimensions: list[dict[str, Any]] = field(default_factory=list)
+    resolved_dimensions: list[dict[str, Any]] = field(default_factory=list)
+    dimension_trends: list[dict[str, Any]] = field(default_factory=list)
+    training_suggestion_history: list[dict[str, Any]] = field(default_factory=list)
     current_training_suggestion: str = ""
     recent_trend: str = ""
     updated_at: str = ""
@@ -58,7 +96,27 @@ class DynamicProfile:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DynamicProfile:
-        return cls(**{k: data.get(k, []) if isinstance(data.get(k), list) else data.get(k, "") for k in cls.__dataclass_fields__})
+        return cls(
+            recent_weak_types=_as_str_list(data.get("recent_weak_types")),
+            recent_low_score_dimensions=_as_dict_list(
+                data.get("recent_low_score_dimensions")
+            ),
+            recent_deduction_reasons=_as_str_list(data.get("recent_deduction_reasons")),
+            recent_followup_issues=_as_str_list(data.get("recent_followup_issues")),
+            repeated_weak_dimensions=_as_dict_list(
+                data.get("repeated_weak_dimensions")
+            ),
+            resolved_dimensions=_as_dict_list(data.get("resolved_dimensions")),
+            dimension_trends=_as_dict_list(data.get("dimension_trends")),
+            training_suggestion_history=_as_dict_list(
+                data.get("training_suggestion_history")
+            ),
+            current_training_suggestion=_as_str(
+                data.get("current_training_suggestion")
+            ),
+            recent_trend=_as_str(data.get("recent_trend")),
+            updated_at=_as_str(data.get("updated_at")),
+        )
 
 
 @dataclass
@@ -109,6 +167,7 @@ class InterviewTurn:
     role: str = ""  # "system", "user", "interviewer", "examinee"
     content: str = ""
     turn_type: str = ""  # "question", "answer", "followup", "followup_answer", "score", "review"
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

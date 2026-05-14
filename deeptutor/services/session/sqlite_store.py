@@ -290,6 +290,7 @@ class SQLiteSessionStore:
             session = await self.get_session(session_id)
             if session is not None:
                 return session
+            return await self.create_session(session_id=session_id)
         return await self.create_session()
 
     @staticmethod
