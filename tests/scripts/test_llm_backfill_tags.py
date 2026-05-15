@@ -35,7 +35,11 @@ def test_is_sentinel_covers_empty_default_and_generic():
     assert not mod._is_sentinel("estimated_difficulty", "hard")
 
 
-def test_needs_backfill_detects_any_sentinel_field():
+def test_needs_backfill_only_triggers_on_question_type_sentinel():
+    """Scope was deliberately narrowed in v2: default difficulty/position
+    are usually correct (most material genuinely is medium/通用), so burning
+    API budget to re-confirm them is wasted spend. Only generic / empty
+    question_type carries actionable LLM-correctable signal."""
     mod = _load_module()
     clean = {
         "estimated_question_type": "社会现象",
@@ -44,8 +48,21 @@ def test_needs_backfill_detects_any_sentinel_field():
     }
     assert not mod._needs_backfill(clean)
 
-    dirty = {**clean, "estimated_difficulty": "medium"}
-    assert mod._needs_backfill(dirty)
+    # default difficulty alone must NOT trigger LLM
+    just_default_diff = {**clean, "estimated_difficulty": "medium"}
+    assert not mod._needs_backfill(just_default_diff)
+
+    # default position alone must NOT trigger LLM
+    just_default_pos = {**clean, "estimated_position": "通用"}
+    assert not mod._needs_backfill(just_default_pos)
+
+    # generic question_type DOES trigger
+    generic_qt = {**clean, "estimated_question_type": "综合课程"}
+    assert mod._needs_backfill(generic_qt)
+
+    # empty question_type DOES trigger
+    empty_qt = {**clean, "estimated_question_type": ""}
+    assert mod._needs_backfill(empty_qt)
 
 
 def test_build_prompt_surfaces_current_tags_and_candidates():
