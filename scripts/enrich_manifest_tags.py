@@ -38,6 +38,8 @@ QUESTION_TYPE_RULES: list[tuple[str, str]] = [
     ("计划组织", "组织管理"),
     ("调查研究", "调查研究"),
     ("启示做法", "启示做法"),
+    ("示范作答", "示范作答"),
+    ("示范答题", "示范作答"),
     ("论证素材", "论证素材"),
     ("论证逻辑", "论证素材"),
     ("热点押题", "热点"),
@@ -49,7 +51,6 @@ QUESTION_TYPE_RULES: list[tuple[str, str]] = [
     ("试题", "真题"),
     ("练习题", "练习"),
     ("课程练习", "练习"),
-    ("示范作答", "示范作答"),
     ("必背模块", "基础"),
     ("高分", "经验笔记"),
     ("前辈", "经验笔记"),
@@ -78,6 +79,7 @@ POSITION_RULES: list[tuple[str, str]] = [
 
 DIFFICULTY_RULES: list[tuple[str, str]] = [
     ("必背模块", "easy"),
+    ("（必背）", "easy"),
     ("母题", "easy"),
     ("第1节", "easy"),
     ("01、论证逻辑", "easy"),
@@ -221,7 +223,7 @@ def main() -> int:
             if old == v:
                 continue
             # only overwrite empty or default sentinel values
-            if old and old not in ("", "通用", "medium"):
+            if old and old not in ("", "通用", "medium", "综合管理"):
                 continue
             f[k] = v
             changed += 1
