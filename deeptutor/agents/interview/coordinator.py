@@ -186,7 +186,6 @@ class MockInterviewCoordinator:
         )
 
         if needs_followup:
-            self._state = "followup_questioning"
             followup_q = await generate_followup(
                 question=self._session.question_text,
                 answer=answer,
@@ -195,20 +194,29 @@ class MockInterviewCoordinator:
                 weak_points=profile.dynamic.recent_weak_types if profile else None,
                 language=self._language,
             )
-            self._session.followup_question = followup_q
-            self._session.turns.append(
-                InterviewTurn(
-                    role="interviewer",
-                    content=followup_q,
-                    turn_type="followup",
+            if followup_q:
+                self._state = "followup_questioning"
+                self._session.followup_question = followup_q
+                self._session.turns.append(
+                    InterviewTurn(
+                        role="interviewer",
+                        content=followup_q,
+                        turn_type="followup",
+                    )
                 )
+                self._memory.save_active_session(self._session)
+                return {
+                    "state": self._state,
+                    "followup_question": followup_q,
+                    "needs_followup": True,
+                }
+            # generate_followup returned "" → LLM echoed the system prompt
+            # or otherwise failed to produce a real follow-up. Fall through
+            # to scoring instead of getting stuck in followup_questioning.
+            logger.info(
+                "Follow-up was requested but no usable question was generated; "
+                "proceeding directly to scoring."
             )
-            self._memory.save_active_session(self._session)
-            return {
-                "state": self._state,
-                "followup_question": followup_q,
-                "needs_followup": True,
-            }
 
         # No followup — go straight to scoring
         return await self._score_and_review()

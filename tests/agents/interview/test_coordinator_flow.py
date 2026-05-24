@@ -49,6 +49,61 @@ def test_parse_followup_decision_prefers_final_explicit_token():
     assert _parse_followup_decision("") is False
 
 
+def test_looks_like_prompt_echo_detects_known_echo_patterns():
+    from deeptutor.agents.interview.followup_agent import _looks_like_prompt_echo
+
+    # Real echo seen in the wild (2026-05-14 live run)
+    real_echo = (
+        "我们被要求：根据考生的回答生成一个追问，针对回答中的薄弱环节"
+        "（论据不足、逻辑跳跃、立意偏浅），要具体不泛泛"
+    )
+    assert _looks_like_prompt_echo(real_echo) is True
+
+    # Variations
+    assert _looks_like_prompt_echo("我的任务是根据考生回答生成追问") is True
+    assert _looks_like_prompt_echo("你的任务是给出一个追问") is True
+    assert _looks_like_prompt_echo("Generate a follow-up question only") is True
+    assert _looks_like_prompt_echo("Output the question itself please") is True
+
+    # Legit follow-up questions must NOT be flagged
+    assert _looks_like_prompt_echo("你提到了浙江最多跑一次改革，请展开说说为什么它"
+                                    "被认为是出彩案例") is False
+    assert _looks_like_prompt_echo("能否举一个你亲身经历的、体现"
+                                    "'群众视角'的具体场景？") is False
+    assert _looks_like_prompt_echo("") is False
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_skips_followup_when_llm_echoes_system_prompt(coordinator):
+    """When generate_followup returns "" (echo-detected), submit_answer
+    must NOT get stuck in followup_questioning — it should fall through
+    to scoring + review like a normal no-followup flow."""
+    with patch(
+        "deeptutor.agents.interview.coordinator.should_follow_up",
+        AsyncMock(return_value=True),  # decision says yes, but...
+    ), patch(
+        "deeptutor.agents.interview.coordinator.generate_followup",
+        AsyncMock(return_value=""),     # ...the LLM echoed, returning ""
+    ), patch(
+        "deeptutor.agents.interview.coordinator.score_answer",
+        AsyncMock(return_value=(
+            [DimensionScore(dimension=f"维度{i+1}", score=7.0, max_score=10.0) for i in range(8)],
+            56.0,
+        )),
+    ), patch(
+        "deeptutor.agents.interview.coordinator.generate_review",
+        AsyncMock(return_value="Mock review. 下一步训练建议：练习结构化。"),
+    ):
+        await coordinator.start_interview(question_type="综合分析")
+        result = await coordinator.submit_answer("作答内容。")
+
+    assert result["state"] == "completed"
+    assert coordinator.state == "completed"
+    session = coordinator.session
+    assert session is not None
+    assert session.followup_question == ""
+
+
 @pytest.mark.asyncio
 async def test_start_interview_no_rag(coordinator):
     """start_interview should work even without RAG (uses fallback question)."""

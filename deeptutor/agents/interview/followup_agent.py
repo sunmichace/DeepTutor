@@ -78,7 +78,14 @@ async def generate_followup(
     weak_points: list[str] | None = None,
     language: str = "zh",
 ) -> str:
-    """Generate a targeted follow-up question based on the answer gaps."""
+    """Generate a targeted follow-up question based on the answer gaps.
+
+    Returns an empty string when the LLM ignores the system prompt and
+    parrots back the instructions instead of producing a real follow-up
+    (caught in the wild on 2026-05-14: DeepSeek emitted "我们被要求：
+    根据考生的回答生成一个追问..."). The coordinator interprets an empty
+    follow-up as "skip the follow-up phase and go straight to scoring".
+    """
     system_prompt = (
         "你是一位公考面试考官。你的任务是根据考生的回答生成一个追问。\n"
         "要求：只输出追问本身，不要输出其他任何文字。追问长度控制在50字以内。\n"
@@ -94,9 +101,36 @@ async def generate_followup(
         + "追问："
     )
 
-    return (await llm_complete(
+    raw = (await llm_complete(
         prompt=user_prompt,
         system_prompt=system_prompt,
         temperature=0.3,
         max_tokens=200,
     )).strip()
+
+    if _looks_like_prompt_echo(raw):
+        logger.warning(
+            "Follow-up LLM appears to have echoed the system prompt; "
+            "skipping follow-up. Raw head=%r",
+            raw[:80],
+        )
+        return ""
+    return raw
+
+
+_PROMPT_ECHO_MARKERS = (
+    "根据考生的回答生成一个追问",
+    "我们被要求",
+    "我的任务是",
+    "你的任务是",
+    "只输出追问本身",
+    "Generate a follow-up question only",
+    "Output the question itself",
+)
+
+
+def _looks_like_prompt_echo(text: str) -> bool:
+    """Detect when the LLM regurgitates the instructions instead of asking."""
+    if not text:
+        return False
+    return any(marker in text for marker in _PROMPT_ECHO_MARKERS)
