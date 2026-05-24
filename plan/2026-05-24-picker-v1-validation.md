@@ -1,6 +1,6 @@
 # Picker V1 Live + 合成验证报告
 
-更新时间：2026-05-24
+更新时间：2026-05-24（第二次更新：补充 persistently_weak live 证据）
 分支：main（PR #1 已合并）
 
 ## 1. 验证目的
@@ -129,11 +129,39 @@ avoid_question_types = [
 ✅ 难度递进 medium→hard                 (合成)
 ✅ 调用方指定 hard/easy 不被覆盖        (合成)
 ✅ picker_snapshot 持久化               (audit 聚合 5/5)
+✅ persistently_weak                  (新：充值后 live Round 1+2 触发)
+✅ repeated_weak_dimensions → focus_dim (新：充值后 live Round 3 picker 派生)
 ⚠️ avoid 与 focus 重叠：V2 待修
-❌ persistently_weak：fixture 已覆盖，live 未触发
 ```
 
-**V2 设计要解决的问题（按优先级）：**
+## 5.1 充值后补跑的 live 证据（用户 live-persistent-weak-test）
+
+```
+Round 1 (综合分析, 故意论据/逻辑薄弱):
+  total_score=33, 7/8 维度 ≤5
+  写入 profile.recent_weak_types=['综合分析']
+
+Round 2 (再来一场综合分析, 同样薄弱模式):
+  total_score=24, 7/8 维度 ≤5
+  写入:
+    repeated_weak_dimensions = 5 个维度 (论据 / 结构化 / 逻辑 / 岗位 / 审题)
+    dimension_trends.persistently_weak = 6 个
+    dimension_trends.declining = 临场应对 delta=-3.0
+    recent_trend = "最近2场总分下降，需复盘答题结构和素材质量"
+
+Round 3 (社会现象, 看 picker 如何利用 repeated_weak):
+  reason = "focus_dim=论据与案例质量,结构化表达 focus_qt=综合分析"
+  focus_dimensions = ['论据与案例质量', '结构化表达']  ← 真实从 repeated_weak 派生
+  query = "社会现象 面试题 公务员 medium 论据与案例质量 - **改进建议**..."
+                                          ^^^^^^^^^^^^
+                                          焦点维度名拼进 RAG query
+  reranked_sources[0] = '第11节：解决社会现象类题目.pdf' score=0.7295
+  → picker 真实驱动了抽题
+```
+
+至此 picker V1 的**所有分支**都拿到了 live + 合成混合证据。
+
+## 5.2 V2 待修
 
 1. `avoid_question_types` 去掉 `recent_weak_types` 的交集
 2. `repeated_weak_dimensions` 与 `focus_dimensions` 关系：当所有反复弱项都 resolved 后 focus_dim 就空了，是否需要回退到"最近一场低分维度"作为弱信号？
