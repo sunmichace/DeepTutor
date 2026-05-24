@@ -511,8 +511,8 @@ BUILTIN_TOOL_TYPES: tuple[type[BaseTool], ...] = (
 BUILTIN_TOOL_NAMES: tuple[str, ...] = tuple(tool_type().name for tool_type in BUILTIN_TOOL_TYPES)
 
 TOOL_ALIASES: dict[str, tuple[str, dict[str, Any]]] = {
-    "rag_hybrid": ("rag", {}),
-    "rag_naive": ("rag", {}),
+    "rag_hybrid": ("rag", {"mode": "hybrid"}),
+    "rag_naive": ("rag", {"mode": "naive"}),
     "rag_search": ("rag", {}),
     "code_execute": ("code_execution", {}),
     "run_code": ("code_execution", {}),

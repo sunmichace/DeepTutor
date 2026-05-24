@@ -101,6 +101,79 @@ def test_run_command_with_config(monkeypatch) -> None:
     }
 
 
+def test_interview_start_command_builds_mock_interview_request(monkeypatch) -> None:
+    captured_requests: list[TurnRequest] = []
+    _install_fake_runtime(monkeypatch, captured_requests)
+
+    result = runner.invoke(
+        app,
+        [
+            "interview",
+            "start",
+            "--session", "candidate-1",
+            "--exam-type", "事业编面试",
+            "--position", "税务",
+            "--question-type", "岗位匹配",
+            "--difficulty", "hard",
+            "--format", "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    request = captured_requests[0]
+    assert request.capability == "mock_interview"
+    assert request.session_id == "candidate-1"
+    assert request.language == "zh"
+    assert request.config == {
+        "mode": "start",
+        "exam_type": "事业编面试",
+        "position": "税务",
+        "question_type": "岗位匹配",
+        "difficulty": "hard",
+    }
+
+
+def test_interview_answer_command_builds_answer_request(monkeypatch) -> None:
+    captured_requests: list[TurnRequest] = []
+    _install_fake_runtime(monkeypatch, captured_requests)
+
+    result = runner.invoke(
+        app,
+        [
+            "interview",
+            "answer",
+            "我的作答内容",
+            "--session", "candidate-1",
+            "--format", "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    request = captured_requests[0]
+    assert request.capability == "mock_interview"
+    assert request.content == "我的作答内容"
+    assert request.config == {"mode": "answer", "answer": "我的作答内容"}
+
+
+def test_interview_profile_and_cancel_commands(monkeypatch) -> None:
+    captured_requests: list[TurnRequest] = []
+    _install_fake_runtime(monkeypatch, captured_requests)
+
+    profile_result = runner.invoke(
+        app,
+        ["interview", "profile", "--session", "candidate-1", "--format", "json"],
+    )
+    cancel_result = runner.invoke(
+        app,
+        ["interview", "cancel", "--session", "candidate-1", "--format", "json"],
+    )
+
+    assert profile_result.exit_code == 0, profile_result.output
+    assert cancel_result.exit_code == 0, cancel_result.output
+    assert captured_requests[0].config == {"mode": "profile"}
+    assert captured_requests[1].config == {"mode": "cancel"}
+
+
 def test_session_list_command_uses_shared_store(monkeypatch) -> None:
     async def _list_sessions(self, limit: int = 50, offset: int = 0):  # noqa: ANN001
         return [

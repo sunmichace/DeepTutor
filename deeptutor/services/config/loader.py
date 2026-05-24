@@ -113,22 +113,55 @@ def resolve_config_path(
     )
 
 
+def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge ``overlay`` into a copy of ``base``.
+
+    Dict values are merged key by key; other types (scalars, lists) are
+    replaced outright. Non-dict ``base`` values are replaced by the overlay.
+    """
+    merged: dict[str, Any] = dict(base)
+    for key, value in overlay.items():
+        existing = merged.get(key)
+        if isinstance(existing, dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(existing, value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def load_config_with_main(config_file: str, project_root: Path | None = None) -> dict[str, Any]:
     """
-    Load configuration file, automatically merge with main.yaml common configuration
+    Load configuration file, automatically merging on top of ``main.yaml``.
+
+    The canonical ``main.yaml`` in the settings directory acts as a base;
+    the requested ``config_file`` overlays onto it (deep merge). When
+    ``config_file`` itself is ``main.yaml``, no overlay is applied.
 
     Args:
-        config_file: Configuration file name (e.g., "main.yaml")
-        project_root: Project root directory (if None, will try to auto-detect)
+        config_file: Configuration file name (e.g., "main.yaml" or "custom.yaml")
+        project_root: Project root directory (if None, uses ``PROJECT_ROOT``)
 
     Returns:
-        Merged configuration dictionary
+        Merged configuration dictionary.
     """
     if project_root is None:
         project_root = PROJECT_ROOT
 
     config_path, _ = resolve_config_path(config_file, project_root)
-    return _inject_runtime_paths(_load_yaml_file(config_path))
+    overlay = _load_yaml_file(config_path)
+
+    if config_path.name == "main.yaml":
+        return _inject_runtime_paths(overlay)
+
+    try:
+        main_path, _ = resolve_config_path("main.yaml", project_root)
+    except FileNotFoundError:
+        base: dict[str, Any] = {}
+    else:
+        base = _load_yaml_file(main_path)
+
+    merged = _deep_merge(base, overlay)
+    return _inject_runtime_paths(merged)
 
 
 async def load_config_with_main_async(

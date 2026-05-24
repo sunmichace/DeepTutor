@@ -57,7 +57,7 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
     },
     # DeepSeek
     "deepseek": {
-        "supports_response_format": False,  # DeepSeek doesn't support strict JSON schema yet
+        "supports_response_format": True,  # DeepSeek supports JSON mode via OpenAI-compatible API
         "supports_streaming": True,
         "supports_tools": True,
         "supports_vision": False,

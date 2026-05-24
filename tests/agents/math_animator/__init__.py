@@ -1,0 +1,1 @@
+"""Math animator tests package."""

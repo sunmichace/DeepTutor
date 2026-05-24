@@ -193,6 +193,7 @@ async def ingest_to_knowledge_base(
     input_dir: str | None = None,
     dry_run: bool = False,
     use_llm_tags: bool = False,
+    skip_embedding_check: bool = False,
 ) -> bool:
     """Main ingestion function."""
     project_root = _PROJECT_ROOT
@@ -276,6 +277,26 @@ async def ingest_to_knowledge_base(
     from deeptutor.services.rag.factory import DEFAULT_PROVIDER
     from deeptutor.services.rag.service import RAGService
 
+    if not skip_embedding_check:
+        from deeptutor.services.embedding.health import check_embedding_health
+
+        health = await check_embedding_health("公考面试资料向量索引健康检查")
+        if not health.ok:
+            logger.warning("Embedding health check failed; skipping vector index initialization.")
+            logger.warning(f"Embedding binding: {health.binding or 'unknown'}")
+            logger.warning(f"Embedding model: {health.model or 'unknown'}")
+            logger.warning(f"Embedding host: {health.base_url or 'unknown'}")
+            logger.warning(f"Embedding error: {health.error}")
+            logger.warning(f"Suggestion: {health.suggestion}")
+            print(f"\nIngestion complete. KB '{kb_name}' raw files and manifest are ready.")
+            print(f"  Raw files: {raw_dir}")
+            print(f"  Manifest: {manifest_path}")
+            print(f"  Total files: {len(file_manifests)}")
+            print("  RAG index: not initialized (embedding health check failed)")
+            print(f"  Embedding error: {health.error}")
+            print(f"  Suggestion: {health.suggestion}")
+            return True
+
     rag = RAGService(kb_base_dir=kb_base_dir, provider=DEFAULT_PROVIDER)
 
     success = False
@@ -337,6 +358,11 @@ def main() -> None:
         action="store_true",
         help="Use LLM to enrich metadata (requires LLM config)",
     )
+    parser.add_argument(
+        "--skip-embedding-check",
+        action="store_true",
+        help="Skip the pre-index embedding health check and try RAG initialization directly",
+    )
     args = parser.parse_args()
 
     import asyncio
@@ -347,6 +373,7 @@ def main() -> None:
             input_dir=args.input_dir,
             dry_run=args.dry_run,
             use_llm_tags=args.use_llm_tags,
+            skip_embedding_check=args.skip_embedding_check,
         )
     )
     sys.exit(0 if success else 1)

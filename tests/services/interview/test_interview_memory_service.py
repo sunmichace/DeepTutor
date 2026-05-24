@@ -91,6 +91,58 @@ def test_save_and_read_profile() -> None:
     assert loaded.dynamic.current_training_suggestion == "加强综合分析题练习"
 
 
+def test_profile_from_dict_preserves_field_types() -> None:
+    profile = LearnerProfile.from_dict(
+        {
+            "stable": {
+                "target_exam_type": "国考",
+                "needs_template_prompt": True,
+                "needs_high_score_demo": "false",
+            },
+            "dynamic": {
+                "recent_weak_types": ["综合分析", 123],
+                "recent_low_score_dimensions": [
+                    {"dimension": "逻辑完整性", "score": 4},
+                    "bad-item",
+                ],
+                "repeated_weak_dimensions": [
+                    {"dimension": "逻辑完整性", "count": 2},
+                    "bad-item",
+                ],
+                "dimension_trends": [
+                    {"dimension": "逻辑完整性", "status": "declining"},
+                    "bad-item",
+                ],
+                "training_suggestion_history": [
+                    {"session_id": "s1", "suggestion": "补充案例"},
+                    "bad-item",
+                ],
+                "recent_deduction_reasons": "not-a-list",
+                "current_training_suggestion": None,
+            },
+        }
+    )
+
+    assert profile.stable.target_exam_type == "国考"
+    assert profile.stable.needs_template_prompt is True
+    assert profile.stable.needs_high_score_demo is False
+    assert profile.dynamic.recent_weak_types == ["综合分析", "123"]
+    assert profile.dynamic.recent_low_score_dimensions == [
+        {"dimension": "逻辑完整性", "score": 4}
+    ]
+    assert profile.dynamic.repeated_weak_dimensions == [
+        {"dimension": "逻辑完整性", "count": 2}
+    ]
+    assert profile.dynamic.dimension_trends == [
+        {"dimension": "逻辑完整性", "status": "declining"}
+    ]
+    assert profile.dynamic.training_suggestion_history == [
+        {"session_id": "s1", "suggestion": "补充案例"}
+    ]
+    assert profile.dynamic.recent_deduction_reasons == []
+    assert profile.dynamic.current_training_suggestion == ""
+
+
 def test_read_profile_empty() -> None:
     svc = InterviewMemoryService("nonexistent_user")
     profile = svc.read_profile()
@@ -167,6 +219,47 @@ def test_read_session() -> None:
     assert loaded.user_id == "read_session_test"
 
     assert svc.read_session("nonexistent") is None
+
+
+def test_save_and_read_session_preserves_picker_snapshot() -> None:
+    """Regression: services/interview's InterviewSession used to drop the
+    picker_snapshot field on persistence because it was only declared on the
+    agents/interview copy of the class. Both classes must round-trip it."""
+    svc = InterviewMemoryService("picker_snapshot_persistence_test")
+    snapshot = {
+        "hints": {
+            "focus_dimensions": ["论据与案例质量"],
+            "reason": "focus_dim=...",
+        },
+        "requested_difficulty": "medium",
+        "effective_difficulty": "hard",
+        "source_kind": "rag",
+        "reranked_sources": [{"title": "x.pdf", "score": 0.71}],
+        "query": "综合分析 面试题 公务员 hard 论据与案例质量",
+    }
+    s = InterviewSession(
+        session_id="sess_picker_001",
+        user_id="picker_snapshot_persistence_test",
+        picker_snapshot=snapshot,
+    )
+    svc.save_session(s)
+
+    loaded = svc.read_session("sess_picker_001")
+    assert loaded is not None
+    assert loaded.picker_snapshot == snapshot
+
+    # Active-session round-trip must also preserve it.
+    svc.save_active_session(s)
+    active = svc.read_active_session()
+    assert active is not None
+    assert active.picker_snapshot == snapshot
+
+
+def test_session_from_dict_defaults_missing_picker_snapshot() -> None:
+    """Legacy session JSON files (pre-picker_snapshot) must still load."""
+    legacy = {"session_id": "legacy_sess", "user_id": "legacy_user"}
+    restored = InterviewSession.from_dict(legacy)
+    assert restored.picker_snapshot == {}
 
 
 def test_delete_session() -> None:

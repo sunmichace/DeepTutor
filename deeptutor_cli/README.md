@@ -37,6 +37,7 @@ deeptutor run <capability> <message> [options]
 | `deep_question` | 智能出题 |
 | `deep_research` | 多 agent 深度研究 |
 | `math_animator` | 数学动画生成 |
+| `mock_interview` | 公考/事业编模拟面试 |
 
 ### 选项
 
@@ -77,8 +78,37 @@ deeptutor run deep_research "Transformer 最新进展" \
 # 数学动画
 deeptutor run math_animator "展示正弦函数变换" --config quality=high
 
+# 模拟面试（agent 通用入口）
+deeptutor run mock_interview "开始模拟面试" \
+  --config mode=start --config question_type=综合分析 --config position=基层 -l zh
+
 # JSON 输出（适合 agent 解析）
 deeptutor run deep_solve "求解 x^2=4" -f json
+```
+
+---
+
+## `interview` — 模拟面试
+
+面向人类使用的公考 / 事业编模拟面试快捷命令。底层仍调用 `mock_interview` capability。
+
+```bash
+# 开始一场面试
+deeptutor interview start \
+  --session candidate-001 \
+  --exam-type 公考面试 \
+  --position 基层 \
+  --question-type 综合分析 \
+  --difficulty medium
+
+# 提交主问题作答；如果系统追问，再继续用同一命令提交追问作答
+deeptutor interview answer "我的作答内容..." --session candidate-001
+
+# 查看该用户的面试画像与历史
+deeptutor interview profile --session candidate-001 -f json
+
+# 取消当前进行中的面试
+deeptutor interview cancel --session candidate-001
 ```
 
 ---

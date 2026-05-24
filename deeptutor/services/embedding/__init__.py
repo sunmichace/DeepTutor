@@ -27,6 +27,7 @@ from .adapters import (
 )
 from .client import EmbeddingClient, get_embedding_client, reset_embedding_client
 from .config import EmbeddingConfig, get_embedding_config
+from .health import EmbeddingHealthResult, check_embedding_health
 
 __all__ = [
     "EmbeddingClient",
@@ -34,6 +35,8 @@ __all__ = [
     "get_embedding_client",
     "get_embedding_config",
     "reset_embedding_client",
+    "EmbeddingHealthResult",
+    "check_embedding_health",
     "BaseEmbeddingAdapter",
     "EmbeddingRequest",
     "EmbeddingResponse",

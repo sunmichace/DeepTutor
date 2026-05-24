@@ -29,6 +29,7 @@ from .models import (
 _PROFILE_FILE = "profile.json"
 _SESSIONS_DIR = "sessions"
 _SESSIONS_INDEX = "sessions_index.json"
+_ACTIVE_SESSION_FILE = "active_session.json"
 
 logger: Logger = get_logger("InterviewMemory")
 
@@ -118,6 +119,32 @@ class InterviewMemoryService:
             logger.warning(f"Failed to read session {session_id}: {exc}")
             return None
 
+    def save_active_session(self, session: InterviewSession) -> None:
+        """Persist the in-progress session for this user."""
+        path = self._user_dir / _ACTIVE_SESSION_FILE
+        path.write_text(
+            json.dumps(session.to_dict(), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def read_active_session(self) -> InterviewSession | None:
+        """Read the in-progress session for this user, if one exists."""
+        path = self._user_dir / _ACTIVE_SESSION_FILE
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return InterviewSession.from_dict(data)
+        except (json.JSONDecodeError, KeyError) as exc:
+            logger.warning(f"Failed to read active session for user {self._user_id}: {exc}")
+            return None
+
+    def clear_active_session(self) -> None:
+        """Remove the in-progress session marker for this user."""
+        path = self._user_dir / _ACTIVE_SESSION_FILE
+        if path.exists():
+            path.unlink()
+
     def list_sessions(
         self,
         limit: int = 20,
@@ -168,6 +195,7 @@ class InterviewMemoryService:
     def clear_all(self) -> None:
         """Clear all memory (profile + sessions) for this user."""
         self.clear_profile()
+        self.clear_active_session()
         self.clear_all_sessions()
         logger.info(f"Cleared all interview memory for user {self._user_id}")
 
@@ -176,6 +204,11 @@ class InterviewMemoryService:
         return {
             "user_id": self._user_id,
             "profile": self.read_profile().to_dict(),
+            "active_session": (
+                active.to_dict()
+                if (active := self.read_active_session()) is not None
+                else None
+            ),
             "sessions": [
                 self.read_session(s["session_id"]).to_dict()  # type: ignore[union-attr]
                 for s in self.list_sessions(limit=1000)

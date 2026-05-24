@@ -66,9 +66,10 @@ def test_resolve_adapter_class_supports_canonical_providers() -> None:
     assert _resolve_adapter_class("jina").__name__ == "JinaEmbeddingAdapter"
     assert _resolve_adapter_class("ollama").__name__ == "OllamaEmbeddingAdapter"
     assert _resolve_adapter_class("vllm").__name__ == "OpenAICompatibleEmbeddingAdapter"
+    assert _resolve_adapter_class("huggingface_local").__name__ == "HuggingFaceLocalEmbeddingAdapter"
+    assert _resolve_adapter_class("sentence_transformers").__name__ == "HuggingFaceLocalEmbeddingAdapter"
 
 
 def test_resolve_adapter_class_rejects_unknown_provider() -> None:
     with pytest.raises(ValueError, match="Unknown embedding binding"):
         _resolve_adapter_class("huggingface")
-

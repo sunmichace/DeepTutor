@@ -23,6 +23,7 @@ class DocumentType(Enum):
     TEXT = "text"  # Plain text, direct read
     MARKDOWN = "markdown"  # Structured text
     DOCX = "docx"  # Word documents
+    PPTX = "pptx"  # PowerPoint presentations
     IMAGE = "image"  # Images (may need OCR)
     UNKNOWN = "unknown"  # Unsupported
 
@@ -65,8 +66,8 @@ class FileTypeRouter:
             ...
     """
 
-    # Extensions requiring parser processing (currently PDF)
-    PARSER_EXTENSIONS = {".pdf"}
+    # Extensions requiring parser processing.
+    PARSER_EXTENSIONS = {".pdf", ".doc", ".docx", ".pptx"}
 
     # Extensions for direct text reading
     TEXT_EXTENSIONS = {
@@ -130,9 +131,6 @@ class FileTypeRouter:
         ".properties",
     }
 
-    # Word document extensions (unsupported in llamaindex-only mode)
-    DOCX_EXTENSIONS = {".docx", ".doc"}
-
     # Image extensions (unsupported in llamaindex-only mode)
     IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".tif"}
 
@@ -150,11 +148,15 @@ class FileTypeRouter:
         ext = Path(file_path).suffix.lower()
 
         if ext in cls.PARSER_EXTENSIONS:
-            return DocumentType.PDF
+            if ext == ".pdf":
+                return DocumentType.PDF
+            if ext in {".doc", ".docx"}:
+                return DocumentType.DOCX
+            if ext == ".pptx":
+                return DocumentType.PPTX
+            return DocumentType.UNKNOWN
         elif ext in cls.TEXT_EXTENSIONS:
             return DocumentType.TEXT
-        elif ext in cls.DOCX_EXTENSIONS:
-            return DocumentType.DOCX
         elif ext in cls.IMAGE_EXTENSIONS:
             return DocumentType.IMAGE
         else:
@@ -207,7 +209,7 @@ class FileTypeRouter:
         for path in file_paths:
             doc_type = cls.get_document_type(path)
 
-            if doc_type == DocumentType.PDF:
+            if doc_type in (DocumentType.PDF, DocumentType.DOCX, DocumentType.PPTX):
                 parser_files.append(path)
             elif doc_type in (DocumentType.TEXT, DocumentType.MARKDOWN):
                 text_files.append(path)
@@ -250,6 +252,21 @@ class FileTypeRouter:
             return f.read().decode("utf-8", errors="replace")
 
     @classmethod
+    def read_text_file_sync(cls, file_path: str) -> str:
+        """Sync variant of ``read_text_file`` for parser internals."""
+        encodings = ["utf-8", "utf-8-sig", "gbk", "gb2312", "gb18030", "latin-1", "cp1252"]
+
+        for encoding in encodings:
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+
+        with open(file_path, "rb") as f:
+            return f.read().decode("utf-8", errors="replace")
+
+    @classmethod
     def needs_parser(cls, file_path: str) -> bool:
         """
         Quick check if a single file needs parser processing.
@@ -261,7 +278,7 @@ class FileTypeRouter:
             True if file requires parser processing
         """
         doc_type = cls.get_document_type(file_path)
-        return doc_type in (DocumentType.PDF, DocumentType.DOCX, DocumentType.IMAGE)
+        return doc_type in (DocumentType.PDF, DocumentType.DOCX, DocumentType.PPTX, DocumentType.IMAGE)
 
     @classmethod
     def is_text_readable(cls, file_path: str) -> bool:

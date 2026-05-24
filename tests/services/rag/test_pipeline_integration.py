@@ -397,10 +397,9 @@ async def main():
     sys.exit(0 if success else 1)
 
 
-# Pytest support
-def pytest_addoption(parser):
-    """Add pytest command line options"""
-    parser.addoption("--pipeline", action="store", default="llamaindex", help="Pipeline to test")
+# Pytest support — the ``--pipeline`` option is registered in
+# ``tests/services/rag/conftest.py`` (pytest ≥ 7 only honours
+# ``pytest_addoption`` from conftests / plugins).
 
 
 class TestPipelineIntegration:

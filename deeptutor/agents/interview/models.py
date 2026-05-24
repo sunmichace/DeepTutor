@@ -75,6 +75,7 @@ class InterviewSession:
     started_at: str = ""
     completed_at: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+    picker_snapshot: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -113,6 +114,7 @@ class InterviewSession:
             "started_at": self.started_at,
             "completed_at": self.completed_at,
             "metadata": self.metadata,
+            "picker_snapshot": self.picker_snapshot,
         }
 
     @classmethod
@@ -144,4 +146,5 @@ class InterviewSession:
             started_at=data.get("started_at", ""),
             completed_at=data.get("completed_at", ""),
             metadata=data.get("metadata", {}),
+            picker_snapshot=data.get("picker_snapshot", {}) or {},
         )

@@ -1,0 +1,579 @@
+[
+  {
+    "id": "profile-repeated-weak-dimension-001",
+    "user_id": "eval-repeated-weak-dimension",
+    "sessions": [
+      {
+        "session_id": "eval_s1",
+        "question_type": "综合分析",
+        "total_score": 52,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "积累基层治理案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例不足"},
+          {"dimension": "结构化表达", "score": 7, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "eval_s2",
+        "question_type": "计划组织",
+        "total_score": 48,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "按题型整理2个可复用案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例不够具体"},
+          {"dimension": "结构化表达", "score": 6, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "eval_s3",
+        "question_type": "综合分析",
+        "total_score": 43,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "重点训练案例展开和结构分层。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例仍偏空"},
+          {"dimension": "结构化表达", "score": 5, "max_score": 10, "deduction_reason": "结构层次不够清楚"}
+        ]
+      }
+    ],
+    "expected": {
+      "repeated_weak_dimensions": ["论据与案例质量"],
+      "recent_weak_types": ["综合分析", "计划组织"],
+      "dimension_status": {
+        "论据与案例质量": "persistently_weak",
+        "结构化表达": "declining"
+      },
+      "latest_training_suggestion": "重点训练案例展开和结构分层。",
+      "recent_trend_contains": "下降"
+    }
+  },
+  {
+    "id": "profile-improving-dimension-001",
+    "user_id": "eval-improving-dimension",
+    "sessions": [
+      {
+        "session_id": "eval_improve_s1",
+        "question_type": "岗位匹配",
+        "total_score": 38,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补充岗位认知和基层场景。",
+        "scores": [
+          {"dimension": "岗位匹配度", "score": 4, "max_score": 10, "deduction_reason": "岗位理解不足"},
+          {"dimension": "语言自然度", "score": 6, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "eval_improve_s2",
+        "question_type": "岗位匹配",
+        "total_score": 55,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "继续结合税务窗口案例作答。",
+        "scores": [
+          {"dimension": "岗位匹配度", "score": 7, "max_score": 10, "deduction_reason": ""},
+          {"dimension": "语言自然度", "score": 7, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "dimension_status": {"岗位匹配度": "improving"},
+      "latest_training_suggestion": "继续结合税务窗口案例作答。",
+      "recent_trend_contains": "上升"
+    }
+  },
+  {
+    "id": "profile-isolated-failure-001",
+    "user_id": "eval-isolated-failure",
+    "sessions": [
+      {
+        "session_id": "iso_s1",
+        "question_type": "综合分析",
+        "total_score": 58,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "案例继续积累。",
+        "scores": [
+          {"dimension": "逻辑清晰度", "score": 8, "max_score": 10, "deduction_reason": ""},
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例不足"}
+        ]
+      },
+      {
+        "session_id": "iso_s2",
+        "question_type": "社会现象",
+        "total_score": 42,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "稳住临场状态。",
+        "scores": [
+          {"dimension": "逻辑清晰度", "score": 3, "max_score": 10, "deduction_reason": "临场紧张，逻辑断裂"},
+          {"dimension": "论据与案例质量", "score": 3, "max_score": 10, "deduction_reason": "案例空"}
+        ]
+      },
+      {
+        "session_id": "iso_s3",
+        "question_type": "综合分析",
+        "total_score": 56,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "论据保持深度。",
+        "scores": [
+          {"dimension": "逻辑清晰度", "score": 8, "max_score": 10, "deduction_reason": ""},
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      }
+    ],
+    "expected": {
+      "repeated_weak_dimensions": ["论据与案例质量"],
+      "repeated_weak_dimensions_excludes": ["逻辑清晰度"],
+      "dimension_status": {
+        "逻辑清晰度": "stable",
+        "论据与案例质量": "persistently_weak"
+      }
+    }
+  },
+  {
+    "id": "profile-suggestion-history-001",
+    "user_id": "eval-suggestion-history",
+    "sessions": [
+      {
+        "session_id": "sug_s1",
+        "question_type": "综合分析",
+        "total_score": 46,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补充基层治理案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例不足"}
+        ]
+      },
+      {
+        "session_id": "sug_s2",
+        "question_type": "综合分析",
+        "total_score": 50,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "练习结构化分层。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      },
+      {
+        "session_id": "sug_s3",
+        "question_type": "综合分析",
+        "total_score": 54,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "加强论据深度。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "论据仍浅"}
+        ]
+      }
+    ],
+    "expected": {
+      "latest_training_suggestion": "加强论据深度。",
+      "training_suggestion_history_contains": [
+        "加强论据深度。",
+        "练习结构化分层。",
+        "补充基层治理案例。"
+      ]
+    }
+  },
+  {
+    "id": "profile-multi-user-isolation-a",
+    "user_id": "eval-isolation-user-a",
+    "sessions": [
+      {
+        "session_id": "iso_a_s1",
+        "question_type": "综合分析",
+        "total_score": 45,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "用户A：加强论据深度。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 3, "max_score": 10, "deduction_reason": "案例空"},
+          {"dimension": "语言自然度", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "iso_a_s2",
+        "question_type": "综合分析",
+        "total_score": 42,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "用户A：继续补案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例不足"},
+          {"dimension": "语言自然度", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "repeated_weak_dimensions": ["论据与案例质量"],
+      "repeated_weak_dimensions_excludes": ["语言自然度"],
+      "latest_training_suggestion": "用户A：继续补案例。",
+      "training_suggestion_history_excludes": [
+        "用户B：语言要自然。",
+        "用户B：练口语。"
+      ]
+    }
+  },
+  {
+    "id": "profile-multi-user-isolation-b",
+    "user_id": "eval-isolation-user-b",
+    "sessions": [
+      {
+        "session_id": "iso_b_s1",
+        "question_type": "岗位匹配",
+        "total_score": 48,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "用户B：语言要自然。",
+        "scores": [
+          {"dimension": "语言自然度", "score": 4, "max_score": 10, "deduction_reason": "书面化严重"},
+          {"dimension": "论据与案例质量", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "iso_b_s2",
+        "question_type": "岗位匹配",
+        "total_score": 44,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "用户B：练口语。",
+        "scores": [
+          {"dimension": "语言自然度", "score": 4, "max_score": 10, "deduction_reason": "仍然生硬"},
+          {"dimension": "论据与案例质量", "score": 7, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "repeated_weak_dimensions": ["语言自然度"],
+      "repeated_weak_dimensions_excludes": ["论据与案例质量"],
+      "latest_training_suggestion": "用户B：练口语。",
+      "training_suggestion_history_excludes": [
+        "用户A：加强论据深度。",
+        "用户A：继续补案例。"
+      ]
+    }
+  },
+  {
+    "id": "profile-recovered-dimension-001",
+    "user_id": "eval-recovered-dimension",
+    "sessions": [
+      {
+        "session_id": "rec_s1",
+        "question_type": "综合分析",
+        "total_score": 40,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补充案例库。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 3, "max_score": 10, "deduction_reason": "案例空"}
+        ]
+      },
+      {
+        "session_id": "rec_s2",
+        "question_type": "综合分析",
+        "total_score": 42,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "继续补案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      },
+      {
+        "session_id": "rec_s3",
+        "question_type": "综合分析",
+        "total_score": 62,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "论据深度可以保持。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "dimension_status": {"论据与案例质量": "improving"},
+      "latest_training_suggestion": "论据深度可以保持。",
+      "recent_trend_contains": "上升"
+    }
+  },
+  {
+    "id": "profile-suggestion-dedup-001",
+    "user_id": "eval-suggestion-dedup",
+    "sessions": [
+      {
+        "session_id": "dedup_s1",
+        "question_type": "综合分析",
+        "total_score": 50,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "按题型整理2个可复用案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例不足"}
+        ]
+      },
+      {
+        "session_id": "dedup_s2",
+        "question_type": "综合分析",
+        "total_score": 52,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "按题型整理2个可复用案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      },
+      {
+        "session_id": "dedup_s3",
+        "question_type": "综合分析",
+        "total_score": 54,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "练习结构化分层。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 6, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "latest_training_suggestion": "练习结构化分层。",
+      "training_suggestion_history_contains": [
+        "练习结构化分层。",
+        "按题型整理2个可复用案例。"
+      ]
+    }
+  },
+  {
+    "id": "profile-suggestion-expiry-001",
+    "user_id": "eval-suggestion-expiry",
+    "sessions": [
+      {
+        "session_id": "exp_s1",
+        "question_type": "综合分析",
+        "total_score": 46,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补充基层治理案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例不足"}
+        ]
+      },
+      {
+        "session_id": "exp_s2",
+        "question_type": "综合分析",
+        "total_score": 50,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "练习结构化分层。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 5, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      },
+      {
+        "session_id": "exp_s3",
+        "question_type": "综合分析",
+        "total_score": 58,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "加强论据深度。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 6, "max_score": 10, "deduction_reason": "论据仍浅"}
+        ]
+      }
+    ],
+    "expected": {
+      "latest_training_suggestion": "加强论据深度。",
+      "training_suggestion_statuses": {
+        "加强论据深度。": "active",
+        "练习结构化分层。": "expired",
+        "补充基层治理案例。": "expired"
+      }
+    }
+  },
+  {
+    "id": "profile-weak-dimension-recovered-001",
+    "user_id": "eval-weak-recovered",
+    "sessions": [
+      {
+        "session_id": "wr_s1",
+        "question_type": "综合分析",
+        "total_score": 40,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补充案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 3, "max_score": 10, "deduction_reason": "案例空"}
+        ]
+      },
+      {
+        "session_id": "wr_s2",
+        "question_type": "综合分析",
+        "total_score": 44,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "继续补案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      },
+      {
+        "session_id": "wr_s3",
+        "question_type": "综合分析",
+        "total_score": 58,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "论据深度可以保持。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 7, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "wr_s4",
+        "question_type": "综合分析",
+        "total_score": 62,
+        "completed_at": "2026-05-04T10:00:00+08:00",
+        "training_suggestion": "保持现有训练节奏。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "repeated_weak_dimensions_excludes": ["论据与案例质量"],
+      "resolved_dimensions": ["论据与案例质量"],
+      "dimension_status": {"论据与案例质量": "improving"}
+    }
+  },
+  {
+    "id": "profile-picker-focus-001",
+    "user_id": "eval-picker-focus",
+    "sessions": [
+      {
+        "session_id": "pf_s1",
+        "question_type": "综合分析",
+        "total_score": 44,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "加强论据深度。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例空"}
+        ]
+      },
+      {
+        "session_id": "pf_s2",
+        "question_type": "社会现象",
+        "total_score": 42,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "补充基层治理案例。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 4, "max_score": 10, "deduction_reason": "案例仍偏空"}
+        ]
+      }
+    ],
+    "expected": {
+      "picker_focus_dimensions": ["论据与案例质量"],
+      "picker_focus_question_types": ["社会现象", "综合分析"],
+      "picker_active_suggestion": "补充基层治理案例。"
+    }
+  },
+  {
+    "id": "profile-picker-avoid-001",
+    "user_id": "eval-picker-avoid",
+    "sessions": [
+      {
+        "session_id": "pa_s1",
+        "question_type": "岗位匹配",
+        "total_score": 42,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "练口语。",
+        "scores": [
+          {"dimension": "语言自然度", "score": 4, "max_score": 10, "deduction_reason": "书面化严重"}
+        ]
+      },
+      {
+        "session_id": "pa_s2",
+        "question_type": "岗位匹配",
+        "total_score": 45,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "继续练口语。",
+        "scores": [
+          {"dimension": "语言自然度", "score": 5, "max_score": 10, "deduction_reason": "仍然生硬"}
+        ]
+      },
+      {
+        "session_id": "pa_s3",
+        "question_type": "岗位匹配",
+        "total_score": 65,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "保持口语节奏。",
+        "scores": [
+          {"dimension": "语言自然度", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "picker_avoid_question_types": ["岗位匹配"],
+      "picker_focus_dimensions": []
+    }
+  },
+  {
+    "id": "profile-picker-difficulty-up-001",
+    "user_id": "eval-picker-diff-up",
+    "requested_difficulty": "medium",
+    "sessions": [
+      {
+        "session_id": "pu_s1",
+        "question_type": "综合分析",
+        "total_score": 75,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "保持节奏。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "pu_s2",
+        "question_type": "综合分析",
+        "total_score": 72,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "保持节奏。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 8, "max_score": 10, "deduction_reason": ""}
+        ]
+      },
+      {
+        "session_id": "pu_s3",
+        "question_type": "综合分析",
+        "total_score": 80,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "保持节奏。",
+        "scores": [
+          {"dimension": "论据与案例质量", "score": 9, "max_score": 10, "deduction_reason": ""}
+        ]
+      }
+    ],
+    "expected": {
+      "picker_suggested_difficulty": "hard"
+    }
+  },
+  {
+    "id": "profile-picker-difficulty-down-001",
+    "user_id": "eval-picker-diff-down",
+    "requested_difficulty": "medium",
+    "sessions": [
+      {
+        "session_id": "pd_s1",
+        "question_type": "综合分析",
+        "total_score": 45,
+        "completed_at": "2026-05-01T10:00:00+08:00",
+        "training_suggestion": "补基础。",
+        "scores": [
+          {"dimension": "逻辑完整性", "score": 4, "max_score": 10, "deduction_reason": "逻辑跳"}
+        ]
+      },
+      {
+        "session_id": "pd_s2",
+        "question_type": "综合分析",
+        "total_score": 40,
+        "completed_at": "2026-05-02T10:00:00+08:00",
+        "training_suggestion": "补基础。",
+        "scores": [
+          {"dimension": "逻辑完整性", "score": 3, "max_score": 10, "deduction_reason": "逻辑断层"}
+        ]
+      },
+      {
+        "session_id": "pd_s3",
+        "question_type": "综合分析",
+        "total_score": 38,
+        "completed_at": "2026-05-03T10:00:00+08:00",
+        "training_suggestion": "补基础。",
+        "scores": [
+          {"dimension": "逻辑完整性", "score": 3, "max_score": 10, "deduction_reason": "逻辑断层"}
+        ]
+      }
+    ],
+    "expected": {
+      "picker_suggested_difficulty": "easy"
+    }
+  }
+]

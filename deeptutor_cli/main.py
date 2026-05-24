@@ -10,6 +10,7 @@ from .bot import register as register_bot
 from .chat import register as register_chat
 from .common import build_turn_request, console, maybe_run
 from .config_cmd import register as register_config
+from .interview import register as register_interview
 from .kb import register as register_kb
 from .memory import register as register_memory
 from .notebook import register as register_notebook
@@ -35,6 +36,7 @@ config_app = typer.Typer(help="Inspect configuration.")
 session_app = typer.Typer(help="Manage shared sessions.")
 notebook_app = typer.Typer(help="Manage notebooks and imported markdown records.")
 provider_app = typer.Typer(help="Manage provider OAuth login.")
+interview_app = typer.Typer(help="Run public-exam mock interviews.")
 
 app.add_typer(bot_app, name="bot")
 app.add_typer(chat_app, name="chat")
@@ -45,6 +47,7 @@ app.add_typer(config_app, name="config")
 app.add_typer(session_app, name="session")
 app.add_typer(notebook_app, name="notebook")
 app.add_typer(provider_app, name="provider")
+app.add_typer(interview_app, name="interview")
 
 register_bot(bot_app)
 register_chat(chat_app)
@@ -55,11 +58,12 @@ register_config(config_app)
 register_session(session_app)
 register_notebook(notebook_app)
 register_provider(provider_app)
+register_interview(interview_app)
 
 
 @app.command("run")
 def run_capability(
-    capability: str = typer.Argument(..., help="Capability name (e.g. chat, deep_solve, deep_question, deep_research, math_animator)."),
+    capability: str = typer.Argument(..., help="Capability name (e.g. chat, deep_solve, deep_question, deep_research, math_animator, mock_interview)."),
     message: str = typer.Argument(..., help="Message to send."),
     session: str | None = typer.Option(None, "--session", help="Existing session id."),
     tool: list[str] = typer.Option([], "--tool", "-t", help="Enabled tool(s)."),

@@ -78,6 +78,9 @@ class MockInterviewCapability(BaseCapability):
 
         elif mode == "answer":
             answer = context.user_message or str(overrides.get("answer", "") or "")
+            active_session = memory_service.read_active_session()
+            if active_session is not None:
+                coordinator.restore_session(active_session)
 
             async with stream.stage("answering", source=self.name):
                 await stream.thinking("正在评估作答...", source=self.name, stage="answering")
@@ -148,7 +151,14 @@ class MockInterviewCapability(BaseCapability):
 
         elif mode == "profile":
             snapshot = memory_service.export_all()
+            response = json.dumps(snapshot, ensure_ascii=False, indent=2)
             await stream.result(
-                {"response": json.dumps(snapshot, ensure_ascii=False, indent=2) if 'json' in dir() else str(snapshot)},
+                {
+                    "response": response,
+                    "mode": "profile",
+                    "profile": snapshot.get("profile", {}),
+                    "active_session": snapshot.get("active_session"),
+                    "sessions": snapshot.get("sessions", []),
+                },
                 source=self.name,
             )
