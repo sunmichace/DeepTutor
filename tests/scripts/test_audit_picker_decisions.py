@@ -274,3 +274,121 @@ def test_main_writes_json_output_alongside_markdown(tmp_path: Path):
     assert summary["total_sessions"] == 1
     assert summary["source_kinds"] == {"rag": 1}
     assert summary["difficulty_decisions"] == {"medium→hard": 1}
+
+
+def test_aggregate_returns_zero_for_empty_reports():
+    mod = _load_module()
+    agg = mod._aggregate({})
+    assert agg["user_count"] == 0
+    assert agg["total_sessions"] == 0
+    assert agg["overall_coverage"] == 0.0
+    assert agg["users_full_coverage"] == 0
+    assert agg["users_zero_coverage"] == 0
+
+
+def test_aggregate_rolls_up_per_user_summaries():
+    mod = _load_module()
+    sessions_a = [
+        _make_session(
+            sid=f"a{i}",
+            completed_at=f"2026-05-0{i+1}T10:00:00+08:00",
+            snapshot={
+                "source_kind": "rag",
+                "requested_difficulty": "medium",
+                "effective_difficulty": "medium",
+                "hints": {"focus_dimensions": []},
+            },
+        )
+        for i in range(2)
+    ]
+    sessions_b = [
+        _make_session(
+            sid="b1",
+            completed_at="2026-05-01T10:00:00+08:00",
+            snapshot={
+                "source_kind": "manifest_fallback",
+                "requested_difficulty": "medium",
+                "effective_difficulty": "hard",
+                "hints": {"focus_dimensions": []},
+            },
+        ),
+    ]
+    sessions_c = [
+        _make_session(sid="c1", completed_at="2026-05-01T10:00:00+08:00", snapshot={}),
+    ]
+    reports = {
+        "user_a": mod._summarise_user(sessions_a),
+        "user_b": mod._summarise_user(sessions_b),
+        "user_c": mod._summarise_user(sessions_c),
+    }
+    agg = mod._aggregate(reports)
+    assert agg["user_count"] == 3
+    assert agg["total_sessions"] == 4
+    assert agg["total_with_snapshot"] == 3            # only c has empty snapshot
+    assert agg["overall_coverage"] == round(3 / 4, 3)
+    assert agg["users_full_coverage"] == 2            # a & b
+    assert agg["users_zero_coverage"] == 1            # c
+    assert agg["source_kinds"] == {"rag": 2, "manifest_fallback": 1, "<missing>": 1}
+    assert agg["difficulty_decisions"] == {"medium→stay": 2, "medium→hard": 1, "?→stay": 1}
+    assert agg["mean_sessions_per_user"] == round(4 / 3, 2)
+
+
+def test_render_markdown_includes_fleet_aggregate_section(tmp_path: Path):
+    mod = _load_module()
+    root = tmp_path / "interview"
+    user_dir = root / "u_agg"
+    _write_session(
+        user_dir,
+        _make_session(
+            sid="s1",
+            completed_at="2026-05-01T10:00:00+08:00",
+            snapshot={
+                "source_kind": "rag",
+                "requested_difficulty": "medium",
+                "effective_difficulty": "hard",
+                "hints": {"focus_dimensions": []},
+            },
+        ),
+    )
+    output = tmp_path / "out.md"
+    mod.main(["--root", str(root), "--output", str(output)])
+    md = output.read_text(encoding="utf-8")
+    assert "## Fleet aggregate" in md
+    assert "**users**: 1" in md
+    assert "**sessions**: 1" in md
+    assert "**overall picker_snapshot coverage**: 1/1" in md
+    assert "**users at full coverage**: 1 / 1" in md
+    assert "**users at zero coverage**: 0 / 1" in md
+    assert "## Per-user" in md
+
+
+def test_main_json_output_contains_aggregate(tmp_path: Path):
+    mod = _load_module()
+    root = tmp_path / "interview"
+    user_dir = root / "u_agg_json"
+    _write_session(
+        user_dir,
+        _make_session(
+            sid="s1",
+            completed_at="2026-05-01T10:00:00+08:00",
+            snapshot={
+                "source_kind": "rag",
+                "requested_difficulty": "medium",
+                "effective_difficulty": "medium",
+                "hints": {"focus_dimensions": []},
+            },
+        ),
+    )
+    md_path = tmp_path / "out.md"
+    json_path = tmp_path / "out.json"
+    mod.main([
+        "--root", str(root),
+        "--output", str(md_path),
+        "--json-output", str(json_path),
+    ])
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert "users" in payload
+    assert "aggregate" in payload
+    assert payload["aggregate"]["user_count"] == 1
+    assert payload["aggregate"]["total_sessions"] == 1
+    assert payload["aggregate"]["overall_coverage"] == 1.0

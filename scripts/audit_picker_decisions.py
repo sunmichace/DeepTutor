@@ -131,6 +131,55 @@ def _summarise_user(sessions: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _aggregate(reports: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Roll up per-user summaries into a fleet-wide view.
+
+    Useful when triaging "is the picker actually getting used by anyone?"
+    without scrolling through dozens of single-user sections.
+    """
+    if not reports:
+        return {
+            "user_count": 0,
+            "total_sessions": 0,
+            "total_with_snapshot": 0,
+            "overall_coverage": 0.0,
+            "users_full_coverage": 0,
+            "users_zero_coverage": 0,
+            "source_kinds": {},
+            "difficulty_decisions": {},
+            "focus_follow_up_count": 0,
+            "mean_sessions_per_user": 0.0,
+        }
+    total_sessions = sum(s["total_sessions"] for s in reports.values())
+    total_with_snapshot = sum(s["with_snapshot"] for s in reports.values())
+    source_kinds: Counter[str] = Counter()
+    diff_decisions: Counter[str] = Counter()
+    focus_followups = 0
+    for s in reports.values():
+        source_kinds.update(s["source_kinds"])
+        diff_decisions.update(s["difficulty_decisions"])
+        focus_followups += len(s["focus_follow_ups"])
+    return {
+        "user_count": len(reports),
+        "total_sessions": total_sessions,
+        "total_with_snapshot": total_with_snapshot,
+        "overall_coverage": round(total_with_snapshot / max(total_sessions, 1), 3),
+        "users_full_coverage": sum(
+            1 for s in reports.values()
+            if s["total_sessions"] > 0
+            and s["with_snapshot"] == s["total_sessions"]
+        ),
+        "users_zero_coverage": sum(
+            1 for s in reports.values()
+            if s["with_snapshot"] == 0
+        ),
+        "source_kinds": dict(source_kinds.most_common()),
+        "difficulty_decisions": dict(diff_decisions.most_common()),
+        "focus_follow_up_count": focus_followups,
+        "mean_sessions_per_user": round(total_sessions / len(reports), 2),
+    }
+
+
 def _render_markdown(reports: dict[str, dict[str, Any]]) -> str:
     lines: list[str] = []
     lines.append("# picker_snapshot audit")
@@ -139,6 +188,42 @@ def _render_markdown(reports: dict[str, dict[str, Any]]) -> str:
         lines.append("_No interview users found under `data/interview/`._")
         return "\n".join(lines)
 
+    # Fleet-wide aggregate up front: makes it obvious at a glance whether
+    # any user has real picker data, without scanning every section.
+    agg = _aggregate(reports)
+    lines.append("## Fleet aggregate")
+    lines.append("")
+    lines.append(f"- **users**: {agg['user_count']}")
+    lines.append(
+        f"- **sessions**: {agg['total_sessions']} "
+        f"(mean {agg['mean_sessions_per_user']} per user)"
+    )
+    lines.append(
+        f"- **overall picker_snapshot coverage**: "
+        f"{agg['total_with_snapshot']}/{agg['total_sessions']} "
+        f"({agg['overall_coverage']})"
+    )
+    lines.append(
+        f"- **users at full coverage**: {agg['users_full_coverage']} / {agg['user_count']}"
+    )
+    lines.append(
+        f"- **users at zero coverage**: {agg['users_zero_coverage']} / {agg['user_count']}"
+    )
+    if agg["source_kinds"]:
+        lines.append(
+            "- **source_kind**: "
+            + ", ".join(f"{k}={v}" for k, v in agg["source_kinds"].items())
+        )
+    if agg["difficulty_decisions"]:
+        lines.append(
+            "- **difficulty**: "
+            + ", ".join(f"{k}={v}" for k, v in agg["difficulty_decisions"].items())
+        )
+    lines.append(f"- **focus follow-ups recorded**: {agg['focus_follow_up_count']}")
+    lines.append("")
+
+    lines.append("## Per-user")
+    lines.append("")
     lines.append("| user | sessions | snapshot_coverage | rag / fallback |")
     lines.append("| --- | --- | --- | --- |")
     for user, summary in reports.items():
@@ -184,6 +269,7 @@ def _render_markdown(reports: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--user", default=None, help="Audit a single user_id only.")
@@ -226,7 +312,11 @@ def main(argv: list[str] | None = None) -> int:
         json_out = Path(args.json_output)
         json_out.parent.mkdir(parents=True, exist_ok=True)
         json_out.write_text(
-            json.dumps({"users": reports}, ensure_ascii=False, indent=2),
+            json.dumps(
+                {"users": reports, "aggregate": _aggregate(reports)},
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
         print(f"json audit written to {json_out}")
